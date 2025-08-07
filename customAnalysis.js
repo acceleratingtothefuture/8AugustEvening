@@ -200,9 +200,13 @@ const keyOf = (y,m,mode) =>
   mode === 'quarterly' ? `${y}-Q${Math.ceil(m/3)}` :
   mode === 'annual'    ? String(y)          :
                          `${y}-${m}`;
-
-const fmt = (v,isCount) => (v==null||Number.isNaN(v)) ? 'N/A'
-                                                      : v + (isCount?' cases':'%');
+function fmt(v, isCount){
+  if (v==null || Number.isNaN(v)) return 'N/A';
+  if (!isCount) return v + '%';
+  const isCaseMode = document.getElementById('dataset').value === 'cases';
+  const unit = isCaseMode ? ' cases' : ' defendants';
+  return v + unit;
+}
 
 function fadeColor(hex,a=.18){
   const n=parseInt(hex.slice(1),16);
@@ -377,16 +381,21 @@ if (loading) loading.remove();
 
   }
 
-  const datasets=[
-    { label: (document.getElementById('dataset').value === 'cases' ? 'ALL' : 'ALL DEFENDANTS'),
-  color:'#000',
-      values:buckets.map(b=>bucketBase[b.key]||0) },
-    ...Object.keys(groupBase).map((g,i)=>({
-      label:g,
-      color:COLORS[(i+1)%COLORS.length],
-      values:buckets.map(b=>groupBase[g]?.[b.key]||0)
-    }))
-  ];
+const allLabel = isCaseMode ? 'All Cases' : 'All Defendants';
+
+const datasets = [
+  {
+    label: allLabel,
+    color: '#000',
+    values: buckets.map(b => bucketBase[b.key] || 0)
+  },
+  ...Object.keys(groupBase).map((g,i) => ({
+    label: g,
+    color: COLORS[(i+1)%COLORS.length],
+    values: buckets.map(b => groupBase[g]?.[b.key] || 0)
+  }))
+];
+
 
   render(datasets,buckets.map(b=>b.label),true);
 }
@@ -440,31 +449,30 @@ function render(datasets,labels,isCount){
 
 function renderLinePie(buckets, lineData, groupCounts, metricName) {
   const grid = document.getElementById('chartGrid');
+  const isCaseMode = document.getElementById('dataset').value === 'cases';
+const unitWord   = isCaseMode ? 'cases' : 'defendants';
+const titleText  = isCaseMode ? prettyName(metricName) : 'All Defendants';
 
   //Remove loading message
   const loading = document.getElementById('pieLoading');
   if (loading) loading.remove();
 
   //Render charts
-  grid.innerHTML = `
-    <div class="chart-box" style="flex:1 1 100%;">
-      <div class="chart-head">
-        <div class="chart-title">${
-  document.getElementById('dataset').value === 'cases'
-    ? prettyName(metricName)
-    : 'All Defendants'
-}</div>
-
-        <div class="chart-month" id="lineMonth"></div>
-      </div>
-      <div class="chart-number" id="lineValue">${lineData.at(-1)} cases</div>
-      <canvas id="lineMain" height="140"></canvas>
+grid.innerHTML = `
+  <div class="chart-box" style="flex:1 1 100%;">
+    <div class="chart-head">
+      <div class="chart-title">${titleText}</div>
+      <div class="chart-month" id="lineMonth"></div>
     </div>
-    <div class="chart-box" style="flex:1 1 320px;">
-      <div class="chart-head"><div class="chart-title">Breakdown</div></div>
-      <div class="chart-number" id="sliceValue"></div>
-      <canvas id="pieMain" height="140"></canvas>
-    </div>`;
+    <div class="chart-number" id="lineValue">${lineData.at(-1)} ${unitWord}</div>
+    <canvas id="lineMain" height="140"></canvas>
+  </div>
+  <div class="chart-box" style="flex:1 1 320px;">
+    <div class="chart-head"><div class="chart-title">Breakdown</div></div>
+    <div class="chart-number" id="sliceValue"></div>
+    <canvas id="pieMain" height="140"></canvas>
+  </div>`;
+
     
   const lineCtx=document.getElementById('lineMain').getContext('2d');
   const pieCtx=document.getElementById('pieMain').getContext('2d');
@@ -491,7 +499,7 @@ function renderLinePie(buckets, lineData, groupCounts, metricName) {
         if(!els.length) return;
         const idx=els[0].index;
         updatePie(idx);
-        document.getElementById('lineValue').textContent=lineData[idx]+' cases';
+        document.getElementById('lineValue').textContent = lineData[idx] + ' ' + unitWord;
         document.getElementById('lineMonth').textContent=labels[idx];
       }
     }
@@ -517,7 +525,7 @@ function renderLinePie(buckets, lineData, groupCounts, metricName) {
         pieChart.data.datasets[0].backgroundColor=
           origColors.map((c,idx)=>idx===i?c:fadeColor(c));
         pieChart.update();
-        box.textContent=`${lbl}: ${val} cases`;
+        box.textContent = `${lbl}: ${val} ${unitWord}`;
         box.style.color=origColors[i];
       }
     }
@@ -639,5 +647,6 @@ document.getElementById('toStats').onclick = () => activatePanel(1);
 document.getElementById('toMonthly').onclick = () => activatePanel(2);
 
 window.build = build;
+
 
 
