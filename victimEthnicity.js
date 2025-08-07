@@ -1,8 +1,8 @@
-// victimEthnicity.js – Victim ethnicity vs. population bar chart
-// File: victimEthnicity.js
+// victimEthnicity.js  (DEMOGRAPHICS)
+// Updated: filter out rows where Victim age is N/A / blank **OR** Gender is blank
 
 const DATA_FOLDER = './data/';
-const PREFIX = window.VICTIM_DEM_PREFIX || 'victim_demographics'; // e.g. victim_demographics2023.xlsx
+const PREFIX = window.VICTIM_DEM_PREFIX || 'victim_demographics';
 
 const POPULATION = {
   'Hispanic or Latino': 153027,
@@ -17,9 +17,11 @@ const LABELS = Object.keys(POPULATION);
 const VICT_COLOR = '#007acc';
 const POP_COLOR  = '#ff9800';
 
-const panel   = document.getElementById('panelVictimEthnicity');
-const noDataP = document.getElementById('veNoData');
+const panel = document.getElementById('panelVictimEthnicity');
 
+/* -------------------------------------------------- */
+/* helpers                                            */
+/* -------------------------------------------------- */
 async function findLatestYear () {
   const cur = new Date().getFullYear();
   for (let y = cur; y >= 2015; y--) {
@@ -34,18 +36,26 @@ function normalEthnicity (raw) {
   if (eth.includes('white'))                     return 'White';
   if (eth.includes('black'))                     return 'Black or African American';
   if (eth.includes('asian'))                     return 'Asian';
-  if (eth.includes('hispanic') || eth.includes('latino')) return 'Hispanic or Latino';
-  if (eth.includes('american indian') || eth.includes('alaska')) return 'American Indian and Alaska Native';
-  if (eth.includes('hawaiian') || eth.includes('pacific')) return 'Native Hawaiian and Other Pacific Islander';
+  if (eth.includes('hispanic') || eth.includes('latino'))
+                                               return 'Hispanic or Latino';
+  if (eth.includes('american indian') || eth.includes('alaska'))
+                                               return 'American Indian and Alaska Native';
+  if (eth.includes('hawaiian') || eth.includes('pacific'))
+                                               return 'Native Hawaiian and Other Pacific Islander';
   return null;
 }
 
 function isBusiness (row) {
-  const gender = String(row['Gender'] || '').trim();
   const ageRaw = String(row['Victim age'] || '').trim().toUpperCase();
-  return !gender && (ageRaw === 'N/A' || ageRaw === 'NA' || !ageRaw);
+  const genderRaw = String(row['Gender'] || '').trim();
+  const ageIsNA = !ageRaw || ageRaw === 'N/A' || ageRaw === 'NA';
+  const genderBlank = !genderRaw;
+  return ageIsNA || genderBlank;
 }
 
+/* -------------------------------------------------- */
+/* main                                              */
+/* -------------------------------------------------- */
 async function loadData () {
   const year = await findLatestYear();
   if (!year) { panel.style.display = 'none'; return; }
@@ -59,7 +69,8 @@ async function loadData () {
     if (isBusiness(r)) return;
     const eth = normalEthnicity(r['Ethnicity']);
     if (!eth) return;
-    counts[eth] = (counts[eth] || 0) + 1; total++;
+    counts[eth] = (counts[eth] || 0) + 1;
+    total++;
   });
 
   if (!total) { panel.style.display = 'none'; return; }
@@ -67,16 +78,39 @@ async function loadData () {
   const popTotal = Object.values(POPULATION).reduce((a,b)=>a+b,0);
   const victData = LABELS.map(k => ((counts[k]||0)/total)*100);
   const popData  = LABELS.map(k => (POPULATION[k]/popTotal)*100);
-  buildChart(LABELS, victData, popData);
+  renderChart(LABELS, victData, popData);
 }
 
-function buildChart(labels, victData, popData){
+function renderChart(labels, vict, pop) {
   const ctx   = document.getElementById('victimEthChart');
-  const lblEl = document.getElementById('hoverVEthLabel');
-  const vEl   = document.getElementById('hoverVEthVict');
-  const pEl   = document.getElementById('hoverVEthPop');
+  const lOut  = document.getElementById('hoverVEthLabel');
+  const vOut  = document.getElementById('hoverVEthVict');
+  const pOut  = document.getElementById('hoverVEthPop');
 
-  new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'Victims',data:victData,backgroundColor:VICT_COLOR},{label:'Population',data:popData,backgroundColor:POP_COLOR}]},options:{indexAxis:'y',responsive:true,scales:{x:{beginAtZero:true,ticks:{callback:v=>v+'%'}}},plugins:{legend:{position:'top'},tooltip:{enabled:false}},onHover:(e,els,ch)=>{const list=ch.getElementsAtEventForMode(e,'nearest',{axis:'y',intersect:false},false);if(list.length){const i=list[0].index;lblEl.textContent=labels[i];vEl.textContent=`${victData[i].toFixed(2)}% of victims`;pEl.textContent=`${popData[i].toFixed(2)}% of population`; }else{lblEl.textContent=vEl.textContent=pEl.textContent='';}}}});
+  new Chart(ctx, {
+    type:'bar',
+    data:{ labels, datasets:[
+      { label:'Victims',    data:vict, backgroundColor:VICT_COLOR },
+      { label:'Population', data:pop,  backgroundColor:POP_COLOR }
+    ]},
+    options:{
+      indexAxis:'y',
+      responsive:true,
+      scales:{ x:{ beginAtZero:true, ticks:{ callback:v=>v+'%' } } },
+      plugins:{ legend:{ position:'top' }, tooltip:{ enabled:false } },
+      onHover:(e,els,ch)=>{
+        const hit = ch.getElementsAtEventForMode(e,'nearest',{axis:'y',intersect:false},false);
+        if (hit.length) {
+          const i = hit[0].index;
+          lOut.textContent = labels[i];
+          vOut.textContent = `${vict[i].toFixed(2)}% of victims`;
+          pOut.textContent = `${pop[i].toFixed(2)}% of population`;
+        } else {
+          lOut.textContent = vOut.textContent = pOut.textContent = '';
+        }
+      }
+    }
+  });
 }
 
 loadData();
