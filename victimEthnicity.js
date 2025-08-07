@@ -1,9 +1,11 @@
-// victimEthnicity.js  (DEMOGRAPHICS)
-// Updated: filter out rows where Victim age is N/A / blank **OR** Gender is blank
+// victimEthnicity.js – Victim ethnicity vs. population bar chart
+// Skips any row with age N/A / blank OR gender blank (business rows)
+// Only chart kept in this slimmed‑down dashboard.
 
 const DATA_FOLDER = './data/';
-const PREFIX = window.VICTIM_DEM_PREFIX || 'victim_demographics';
+const PREFIX = window.VICTIM_DEM_PREFIX || 'victim_demographics'; // victim_demographicsYYYY.xlsx
 
+/* 2020 Census snapshot (Imperial County) */
 const POPULATION = {
   'Hispanic or Latino': 153027,
   'White': 16813,
@@ -12,7 +14,6 @@ const POPULATION = {
   'American Indian and Alaska Native': 4266,
   'Native Hawaiian and Other Pacific Islander': 165
 };
-
 const LABELS = Object.keys(POPULATION);
 const VICT_COLOR = '#007acc';
 const POP_COLOR  = '#ff9800';
@@ -22,7 +23,7 @@ const panel = document.getElementById('panelVictimEthnicity');
 /* -------------------------------------------------- */
 /* helpers                                            */
 /* -------------------------------------------------- */
-async function findLatestYear () {
+async function findLatestYear() {
   const cur = new Date().getFullYear();
   for (let y = cur; y >= 2015; y--) {
     const res = await fetch(`${DATA_FOLDER}${PREFIX}${y}.xlsx`, { method: 'HEAD' });
@@ -31,38 +32,34 @@ async function findLatestYear () {
   return null;
 }
 
-function normalEthnicity (raw) {
+function normalEthnicity(raw) {
   const eth = String(raw).toLowerCase();
   if (eth.includes('white'))                     return 'White';
   if (eth.includes('black'))                     return 'Black or African American';
   if (eth.includes('asian'))                     return 'Asian';
-  if (eth.includes('hispanic') || eth.includes('latino'))
-                                               return 'Hispanic or Latino';
-  if (eth.includes('american indian') || eth.includes('alaska'))
-                                               return 'American Indian and Alaska Native';
-  if (eth.includes('hawaiian') || eth.includes('pacific'))
-                                               return 'Native Hawaiian and Other Pacific Islander';
+  if (eth.includes('hispanic') || eth.includes('latino')) return 'Hispanic or Latino';
+  if (eth.includes('american indian') || eth.includes('alaska')) return 'American Indian and Alaska Native';
+  if (eth.includes('hawaiian') || eth.includes('pacific')) return 'Native Hawaiian and Other Pacific Islander';
   return null;
 }
 
-function isBusiness (row) {
+function isBusiness(row) {
   const ageRaw = String(row['Victim age'] || '').trim().toUpperCase();
   const genderRaw = String(row['Gender'] || '').trim();
-  const ageIsNA = !ageRaw || ageRaw === 'N/A' || ageRaw === 'NA';
-  const genderBlank = !genderRaw;
-  return ageIsNA || genderBlank;
+  const ageNA = !ageRaw || ageRaw === 'N/A' || ageRaw === 'NA';
+  return ageNA || !genderRaw;
 }
 
 /* -------------------------------------------------- */
-/* main                                              */
+/* main                                               */
 /* -------------------------------------------------- */
-async function loadData () {
+async function loadData() {
   const year = await findLatestYear();
   if (!year) { panel.style.display = 'none'; return; }
 
-  const buf   = await fetch(`${DATA_FOLDER}${PREFIX}${year}.xlsx`).then(r => r.arrayBuffer());
-  const wb    = XLSX.read(buf, { type: 'array' });
-  const rows  = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+  const buf = await fetch(`${DATA_FOLDER}${PREFIX}${year}.xlsx`).then(r => r.arrayBuffer());
+  const wb  = XLSX.read(buf, { type: 'array' });
+  const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
 
   const counts = {}; let total = 0;
   rows.forEach(r => {
@@ -82,10 +79,10 @@ async function loadData () {
 }
 
 function renderChart(labels, vict, pop) {
-  const ctx   = document.getElementById('victimEthChart');
-  const lOut  = document.getElementById('hoverVEthLabel');
-  const vOut  = document.getElementById('hoverVEthVict');
-  const pOut  = document.getElementById('hoverVEthPop');
+  const ctx  = document.getElementById('victimEthChart');
+  const lTxt = document.getElementById('hoverVEthLabel');
+  const vTxt = document.getElementById('hoverVEthVict');
+  const pTxt = document.getElementById('hoverVEthPop');
 
   new Chart(ctx, {
     type:'bar',
@@ -102,11 +99,11 @@ function renderChart(labels, vict, pop) {
         const hit = ch.getElementsAtEventForMode(e,'nearest',{axis:'y',intersect:false},false);
         if (hit.length) {
           const i = hit[0].index;
-          lOut.textContent = labels[i];
-          vOut.textContent = `${vict[i].toFixed(2)}% of victims`;
-          pOut.textContent = `${pop[i].toFixed(2)}% of population`;
+          lTxt.textContent = labels[i];
+          vTxt.textContent = `${vict[i].toFixed(2)}% of victims`;
+          pTxt.textContent = `${pop[i].toFixed(2)}% of population`;
         } else {
-          lOut.textContent = vOut.textContent = pOut.textContent = '';
+          lTxt.textContent = vTxt.textContent = pTxt.textContent = '';
         }
       }
     }
