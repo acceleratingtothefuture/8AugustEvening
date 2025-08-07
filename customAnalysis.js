@@ -52,7 +52,14 @@ const FOLDER = './data/';                         // ← change this line
 // const FOLDER = '/wp-content/uploads/da-dashboard/';
 
 
-let rows = [], charts = [], pieChart = null;
+/* ── data stores ─────────────────────────────── */
+const caseRows = [];   // purely case info
+const defRows  = [];   // purely defendant info
+let rows       = caseRows;   // points at the active set
+
+/* ── visuals ─────────────────────────────────── */
+let charts = [], pieChart = null;
+
 
 let fileChartObj = null;
 let sentChartObj = null;
@@ -68,22 +75,7 @@ discoverYears().then(YEARS => {
   });
 });
 
-/*  <--  keep everything below here exactly as you have it  ­--> */
-
-
-/* find every cases_YYYY.xlsx that exists, newest first */
-async function discoverYears() {
-  const found = [];
-  const thisYear = new Date().getFullYear();
-  for (let y = thisYear; y >= 2015; y--) {
-    const head = await fetch(`${FOLDER}cases_${y}.xlsx`, { method: 'HEAD' });
-    if (head.ok) found.push(y);
-    else if (found.length) break;               // stop at first gap
-  }
-  return found;
-}
-
-/* read both xlsx files per year, merge defendant info into each case row */
+/* read both sheets per year — keep rows separate */
 async function loadData(YEARS) {
   for (const y of YEARS) {
     const [bufCases, bufDefs] = await Promise.all([
@@ -101,67 +93,80 @@ async function loadData(YEARS) {
       wbDefs.Sheets[wbDefs.SheetNames[0]], { defval: '' }
     );
 
-   const byCase = {};
-defs.forEach(d => {
-  const clean = cleanDefRow(d);
-  if (clean) byCase[clean.case_id] = clean;   // only 1st hit per case
-});
+    /* ── 1️⃣  clean CASE rows ───────────────────────── */
+    const dateById = {};
+    cases.forEach(c => {
+      const cleaned = cleanCaseRow(c);
+      if (!cleaned) return;
 
+      const dt = new Date(cleaned.date_da);
+      cleaned.ts      = dt.getTime();
+      cleaned.year    = dt.getFullYear();
+      cleaned.month   = dt.getMonth() + 1;
+      cleaned.quarter = Math.floor(dt.getMonth() / 3) + 1;
 
-   cases.forEach(c => {
-  // ---------- NEW BODY ----------
-  const cleaned = cleanCaseRow(c);
-  if (!cleaned) return;                     // skip "Access Denied"
+      caseRows.push(cleaned);
+      dateById[cleaned.case_id] = cleaned.date_da;
+    });
 
-  /* defendant-sheet extras */
-  const d = byCase[cleaned.case_id] || {};
+    /* ── 2️⃣  clean DEFENDANT rows ─────────────────── */
+    defs.forEach(d => {
+      const cleaned = cleanDefRow(d);
+      if (!cleaned) return;
 
-  /* build one fully-normalised row */
-  const row = {
-    ...cleaned,
-    ethnicity :  d.ethnicity || `Not reported`,
-    gender    :  d.gender || `Not reported`,
-    county_res:  d.county_res || `Not reported`,
-    age : d.age ?? null,          // keep it a number or null
-  };
+      const date = dateById[cleaned.case_id];
+      if (!date) return;                 // skip if no matching case
 
-  /* date-helpers the dashboard expects */
-  const dt = new Date(row.date_da);         // SheetJS already parsed it
-  row.ts       = dt.getTime();
-  row.year     = dt.getFullYear();
-  row.month    = dt.getMonth() + 1;
-  row.quarter  = Math.floor(dt.getMonth() / 3) + 1;
-  row.age_group = (Number.isFinite(row.age) ? row.age : null) == null ? 'Not reported' :
-       row.age < 18  ? '<18'  :
-       row.age <= 24 ? '18–24' :
-       row.age <= 34 ? '25–34' :
-       row.age <= 49 ? '35–49' :
-       row.age <= 64 ? '50–64' : '65+';
-
-
-  rows.push(row);                           // ← push once
-});
-
+      const dt = new Date(date);
+      defRows.push({
+        ...cleaned,
+        date_da : date,
+        ts      : dt.getTime(),
+        year    : dt.getFullYear(),
+        month   : dt.getMonth() + 1,
+        quarter : Math.floor(dt.getMonth() / 3) + 1,
+        age_group : (Number.isFinite(cleaned.age) ? cleaned.age : null) == null ? 'Not reported' :
+          cleaned.age < 18  ? '<18'  :
+          cleaned.age <= 24 ? '18–24' :
+          cleaned.age <= 34 ? '25–34' :
+          cleaned.age <= 49 ? '35–49' :
+          cleaned.age <= 64 ? '50–64' : '65+'
+      });
+    });
   }
-
 }
 
 
 /***** CONTROLS *****/
-['metric', 'range', 'dimension'].forEach(id =>
-  document.getElementById(id).onchange = build
+['dataset','metric','range','dimension'].forEach(id =>
+  document.getElementById(id).onchange = (e) => {
+    if (id === 'dataset') initDimension();   // refresh dropdown first
+    build();
+  }
 );
+
 document.getElementById('pieToggle').onchange = build;
 
 function initDimension() {
-  const sel = document.getElementById('dimension');
-  const ignore = ['case_id', 'date_da', 'year', 'month', 'quarter', `ts`, `days_to_file`,`days_file_to_sent`, `age`, ];
-  sel.innerHTML = Object.keys(rows[0])
-    .filter(k => !ignore.includes(k))
-    .map(k =>
-      `<option value="${k}">${k.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</option>`
-    ).join('');
+  const mode   = document.getElementById('dataset').value;      // cases | defendants
+  const sel    = document.getElementById('dimension');
+  const ignore = ['case_id','date_da','year','month','quarter','ts',
+                  'days_to_file','days_file_to_sent','age'];
+
+  const source = mode === 'cases' ? caseRows[0] : defRows[0];
+  let keys     = Object.keys(source).filter(k => !ignore.includes(k));
+
+  if (mode === 'cases') {
+    keys = keys.filter(k => !['ethnicity','gender','county_res','age_group'].includes(k));
+  } else {
+    keys = keys.filter(k =>  ['ethnicity','gender','county_res','age_group'].includes(k));
+  }
+
+  sel.innerHTML = keys.map(k =>
+    `<option value="${k}">${k.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</option>`
+  ).join('');
 }
+
 
 /***** HELPERS *****/
 const keyOf = (y,m,mode) =>
@@ -183,6 +188,13 @@ export { fadeColor };
 
 /***** BUILD DASHBOARD *****/
 export function build() {
+ /* switch the active rows array */
+const isCaseMode = document.getElementById('dataset').value === 'cases';
+rows = isCaseMode ? caseRows : defRows;
+
+/* show/hide the Measure picker */
+document.getElementById('metric').parentElement.style.display = isCaseMode ? '' : 'none';
+
   charts.forEach(c => c.destroy());
   charts.length = 0;
   
@@ -593,4 +605,5 @@ function activatePanel(index) {
 document.getElementById('toMain').onclick = () => activatePanel(0);
 document.getElementById('toStats').onclick = () => activatePanel(1);
 document.getElementById('toMonthly').onclick = () => activatePanel(2);
+
 window.build = build;
