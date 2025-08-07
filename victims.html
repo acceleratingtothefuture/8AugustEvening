@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Imperial County DA • Case Dashboard</title>
+  <title>Imperial County DA • Victim Dashboard</title>
   <link rel="icon" type="image/png" href="logo.png">
   <!-- fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -23,14 +23,14 @@
       <span class="brand-main">Imperial County District Attorney’s Office</span>
       <span class="brand-sub">George Marquez, District Attorney</span>
     </div>
-     <a href="https://da.imperialcounty.org/" >
-        <img src="logo.png" alt="DA Logo" class="logo" />
+    <a href="https://da.imperialcounty.org/">
+      <img src="logo.png" alt="DA Logo" class="logo" />
     </a>
   </header>
 
   <section class="hero">
     <h1>Data Dashboard</h1>
-    <p>Data transparency &amp; data-driven decision-making</p>
+    <p>Data transparency &amp; data‑driven decision‑making</p>
   </section>
 
   <nav class="main-nav">
@@ -42,7 +42,7 @@
     <a href="customAnalysis.html">Custom Analysis</a>
   </nav>
 
-  <!-- VICTIM SERVICES PANEL (unchanged) -->
+  <!-- ======================= VICTIM SERVICES CARD GRID ======================= -->
   <section id="panelVictims" class="victim-panel">
     <div class="victim-wrapper">
       <div id="victimHeader" class="victim-header">
@@ -52,6 +52,7 @@
 
       <div class="victim-flex">
         <div class="victim-left" id="victimStatsWrap"></div>
+
         <div class="victim-right">
           <div id="victimDescBox" class="victim-desc-dynamic">
             <h3>Hover a service type to see description</h3>
@@ -62,64 +63,33 @@
     </div>
   </section>
 
-  <!-- ETHNICITY BAR CHART -->
+  <!-- ======================== VICTIM ETHNICITY CHART ======================== -->
   <section id="panelVictimEthnicity" class="demo-panel">
     <div class="dashboard-header">
       <h2>Victim Ethnicity Demographics</h2>
-      <p>Breakdown of victims compared to Imperial County’s population.</p>
+      <p>Breakdown of victims compared with Imperial County’s population.</p>
     </div>
+
     <div class="hover-box">
       <div id="hoverVEthLabel" class="hover-line"></div>
       <div id="hoverVEthVict"  class="hover-line"></div>
       <div id="hoverVEthPop"   class="hover-line"></div>
     </div>
+
     <div class="bar-chart-box">
       <canvas id="victimEthChart"></canvas>
       <p id="veNoData" class="no-data" style="display:none;text-align:center;color:#888;">No victim ethnicity data available.</p>
     </div>
   </section>
 
-  <!-- GENDER PIE CHART -->
-  <section id="panelVictimGenderPie" class="demo-panel">
-    <div class="dashboard-header">
-      <h2>Victim Gender Demographics</h2>
-      <p>Percent of victims by gender (latest year).</p>
-    </div>
-    <div class="hover-box">
-      <div id="hoverVGenderLabel" class="hover-line"></div>
-      <div id="hoverVGenderPct"   class="hover-line"></div>
-    </div>
-    <div class="bar-chart-box">
-      <canvas id="victimGenderPieChart"></canvas>
-      <p id="vgNoData" class="no-data" style="display:none;text-align:center;color:#888;">No victim gender data available.</p>
-    </div>
-  </section>
-
-  <!-- AGE BAR CHART -->
-  <section id="panelVictimAge" class="demo-panel">
-    <div class="dashboard-header">
-      <h2>Victim Age Demographics</h2>
-      <p>Victim age groups compared to Imperial County’s population.</p>
-    </div>
-    <div class="hover-box">
-      <div id="hoverVAgeLabel" class="hover-line"></div>
-      <div id="hoverVAgeVict"  class="hover-line"></div>
-      <div id="hoverVAgePop"   class="hover-line"></div>
-    </div>
-    <div class="bar-chart-box">
-      <canvas id="victimAgeChart"></canvas>
-      <p id="vaNoData" class="no-data" style="display:none;text-align:center;color:#888;">No victim age data available.</p>
-    </div>
-  </section>
-
-  <!-- SCRIPTS -->
+  <!-- ============================ SCRIPTS =================================== -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+
+  <!-- Victim‑services logic -->
   <script src="victims.js"></script>
 
-  <!-- New demographic scripts -->
+  <!-- ONLY ethnicity demo script -->
   <script type="module" src="victimEthnicity.js" defer></script>
-  <script type="module" src="victimGenderPie.js" defer></script>
-  <script type="module" src="victimAge.js" defer></script>
 </body>
 </html>
