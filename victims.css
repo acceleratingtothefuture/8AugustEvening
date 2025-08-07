@@ -61,6 +61,28 @@ canvas{max-width:100%}
   width: 100%;
   height: auto;
   display: block;
+
+  /* ---------- layout hot-fixes ---------- */
+
+/* Keep the Victim Services header big and centred */
+.victim-header h2   { font-size: 2.2rem; font-weight: 800; text-align:center; }
+.victim-sub         { font-size: 1.25rem; color:#444;      text-align:center; }
+
+/* Stop the description box from shrinking and pushing the pie down */
+.victim-desc-dynamic {
+  min-height: 180px;   /* plenty of room for longer text */
+}
+
+/* Let the services pie stay centred instead of hard-pinned top-left */
+#victimPieChart {
+  position: static !important;   /* cancel earlier absolute rule */
+  max-width: 420px;
+  width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;                /* centre horizontally */
+}
+
   margin: 0 auto;              /* horizontally centre the canvas */
 }
 
