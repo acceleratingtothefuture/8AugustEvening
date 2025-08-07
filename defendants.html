@@ -17,10 +17,15 @@
   
 
   <!-- Logic -->
+  <!-- Existing ethnicity + gender -->
   <script type="module" src="defendants.js" defer></script>
   <script type="module" src="defendantsDeclined.js" defer></script>
   <script type="module" src="defendantsGenderPie.js" defer></script>
-  <script type="module" src="defendantsGender.js" defer></script> 
+  <script type="module" src="defendantsGender.js" defer></script>
+
+  <!-- NEW age modules -->
+  <script type="module" src="defendantsAge.js" defer></script>
+  <script type="module" src="defendantsDeclinedAge.js" defer></script>
 </head>
 <body>
 
@@ -48,6 +53,9 @@
   <a href="customAnalysis.html">Custom Analysis</a>
 </nav>
 
+<!-- ===================================================================================== -->
+<!-- ETHNICITY PANELS -->
+<!-- ===================================================================================== -->
 <section id="panelMain">
   <div class="dashboard-header">
     <h2>Defendant Ethnicity Demographics</h2>
@@ -82,7 +90,10 @@
   </div>
 </section>
 
-  <section id="panelGenderPie">
+<!-- ===================================================================================== -->
+<!-- GENDER PANELS -->
+<!-- ===================================================================================== -->
+<section id="panelGenderPie">
   <div class="dashboard-header">
     <h2>Defendant Gender Demographics</h2>
     <p>Percent of defendants by gender (latest year).</p>
@@ -98,21 +109,59 @@
   </div>
 </section>
 
-  <section id="panelGender">
-    <div class="dashboard-header">
-      <h2>Declined-to-Charge by Gender</h2>
-      <p>Percentage of defendants whose cases were rejected for filing, by gender.</p>
-    </div>
+<section id="panelGender">
+  <div class="dashboard-header">
+    <h2>Declined-to-Charge by Gender</h2>
+    <p>Percentage of defendants whose cases were rejected for filing, by gender.</p>
+  </div>
 
-    <div class="hover-box">
-      <div id="hoverGender" class="hover-line"></div>
-      <div id="hoverDeclG"  class="hover-line"></div>
-      <div id="hoverAllG"   class="hover-line"></div>
-    </div>
+  <div class="hover-box">
+    <div id="hoverGender" class="hover-line"></div>
+    <div id="hoverDeclG"  class="hover-line"></div>
+    <div id="hoverAllG"   class="hover-line"></div>
+  </div>
 
-    <div class="bar-chart-box">
-      <canvas id="genderChart"></canvas>
-    </div>
-  </section>
+  <div class="bar-chart-box">
+    <canvas id="genderChart"></canvas>
+  </div>
+</section>
+
+<!-- ===================================================================================== -->
+<!-- AGE PANELS (NEW) -->
+<!-- ===================================================================================== -->
+<section id="panelAgeMain">
+  <div class="dashboard-header">
+    <h2>Defendant Age Demographics</h2>
+    <p>This chart compares the age breakdown of defendants to Imperial County’s population.</p>
+  </div>
+
+  <div class="hover-box">
+    <div id="hoverAgeLabel" class="hover-line"></div>
+    <div id="hoverAgeDef"  class="hover-line"></div>
+    <div id="hoverAgePop"  class="hover-line"></div>
+  </div>
+
+  <div class="bar-chart-box">
+    <canvas id="ageChart"></canvas>
+  </div>
+</section>
+
+<section id="panelAgeCases">
+  <div class="dashboard-header">
+    <h2>Declined‑to‑Charge by Age</h2>
+    <p>Percentage of defendants whose cases were rejected for filing, by age group.</p>
+  </div>
+
+  <div class="hover-box">
+    <div id="hoverAgeLabel2" class="hover-line"></div>
+    <div id="hoverAgeDecl"  class="hover-line"></div>
+    <div id="hoverAgeAll"   class="hover-line"></div>
+  </div>
+
+  <div class="bar-chart-box">
+    <canvas id="declinedAgeChart"></canvas>
+  </div>
+</section>
+
 </body>
 </html>
