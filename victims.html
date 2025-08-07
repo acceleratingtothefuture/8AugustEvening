@@ -10,6 +10,11 @@
 
   <!-- styles -->
   <link rel="stylesheet" href="victims.css" />
+
+  <!-- Config: victim demo file naming (no underscore before year) -->
+  <script>
+    window.VICTIM_DEM_PREFIX = 'victim_demographics'; // e.g. victim_demographics2023.xlsx
+  </script>
 </head>
 <body>
 
@@ -37,9 +42,7 @@
     <a href="customAnalysis.html">Custom Analysis</a>
   </nav>
 
-  <!-- ===================================================================================== -->
-  <!-- VICTIM SERVICES PANEL (existing)                                                      -->
-  <!-- ===================================================================================== -->
+  <!-- VICTIM SERVICES PANEL (unchanged) -->
   <section id="panelVictims" class="victim-panel">
     <div class="victim-wrapper">
       <div id="victimHeader" class="victim-header">
@@ -49,7 +52,6 @@
 
       <div class="victim-flex">
         <div class="victim-left" id="victimStatsWrap"></div>
-
         <div class="victim-right">
           <div id="victimDescBox" class="victim-desc-dynamic">
             <h3>Hover a service type to see description</h3>
@@ -60,24 +62,20 @@
     </div>
   </section>
 
-  <!-- ===================================================================================== -->
-  <!-- NEW: VICTIM DEMOGRAPHICS PANELS                                                      -->
-  <!-- ===================================================================================== -->
   <!-- ETHNICITY BAR CHART -->
   <section id="panelVictimEthnicity" class="demo-panel">
     <div class="dashboard-header">
       <h2>Victim Ethnicity Demographics</h2>
       <p>Breakdown of victims compared to Imperial County’s population.</p>
     </div>
-
     <div class="hover-box">
       <div id="hoverVEthLabel" class="hover-line"></div>
       <div id="hoverVEthVict"  class="hover-line"></div>
       <div id="hoverVEthPop"   class="hover-line"></div>
     </div>
-
     <div class="bar-chart-box">
       <canvas id="victimEthChart"></canvas>
+      <p id="veNoData" class="no-data" style="display:none;text-align:center;color:#888;">No victim ethnicity data available.</p>
     </div>
   </section>
 
@@ -87,14 +85,13 @@
       <h2>Victim Gender Demographics</h2>
       <p>Percent of victims by gender (latest year).</p>
     </div>
-
     <div class="hover-box">
       <div id="hoverVGenderLabel" class="hover-line"></div>
       <div id="hoverVGenderPct"   class="hover-line"></div>
     </div>
-
     <div class="bar-chart-box">
       <canvas id="victimGenderPieChart"></canvas>
+      <p id="vgNoData" class="no-data" style="display:none;text-align:center;color:#888;">No victim gender data available.</p>
     </div>
   </section>
 
@@ -104,21 +101,18 @@
       <h2>Victim Age Demographics</h2>
       <p>Victim age groups compared to Imperial County’s population.</p>
     </div>
-
     <div class="hover-box">
       <div id="hoverVAgeLabel" class="hover-line"></div>
       <div id="hoverVAgeVict"  class="hover-line"></div>
       <div id="hoverVAgePop"   class="hover-line"></div>
     </div>
-
     <div class="bar-chart-box">
       <canvas id="victimAgeChart"></canvas>
+      <p id="vaNoData" class="no-data" style="display:none;text-align:center;color:#888;">No victim age data available.</p>
     </div>
   </section>
 
-  <!-- ===================================================================================== -->
-  <!-- SCRIPTS                                                                               -->
-  <!-- ===================================================================================== -->
+  <!-- SCRIPTS -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <script src="victims.js"></script>
