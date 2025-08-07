@@ -66,6 +66,17 @@ let sentChartObj = null;
 
 
 /*  <--  keep everything above here exactly as you have it  ­--> */
+/* find every cases_YYYY.xlsx that exists, newest first */
+async function discoverYears() {
+  const found = [];
+  const thisYear = new Date().getFullYear();
+  for (let y = thisYear; y >= 2015; y--) {
+    const head = await fetch(`${FOLDER}cases_${y}.xlsx`, { method: 'HEAD' });
+    if (head.ok) found.push(y);
+    else if (found.length) break;   // stop at first gap
+  }
+  return found;
+}
 
 discoverYears().then(YEARS => {
   loadData(YEARS).then(() => {
@@ -607,3 +618,4 @@ document.getElementById('toStats').onclick = () => activatePanel(1);
 document.getElementById('toMonthly').onclick = () => activatePanel(2);
 
 window.build = build;
+
