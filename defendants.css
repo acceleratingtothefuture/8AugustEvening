@@ -103,13 +103,33 @@ canvas {
   cursor: default;
 }
 
-/* MAIN SECTION */
+/* MAIN SECTION WIDTHS */
 #panelMain, #panelCases {
   padding: 30px 20px;
   max-width: 1100px;
   margin: 0 auto;
 }
 
+#panelGender {
+  padding: 30px 20px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+#panelGenderPie {
+  padding: 30px 20px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* NEW AGE PANELS */
+#panelAgeMain, #panelAgeCases {
+  padding: 30px 20px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* DASHBOARD HEADER */
 .dashboard-header {
   text-align: center;
   margin-bottom: 30px;
@@ -143,47 +163,34 @@ canvas {
   margin: 4px 0;
 }
 
-#hoverDef {
-  color: #007acc;
-}
+/* ETHNICITY + POPULATION HOVER COLOURS */
+#hoverDef { color: #007acc; }
+#hoverPop { color: #ff9800; }
 
-#hoverPop {
-  color: #ff9800;
-}
-
-/* DECLINED CHART COLORS */
-#hoverRace2 { color: #222;    }
+/* DECLINED CHART COLOURS */
+#hoverRace2 { color: #222; }
 #hoverDecl  { color: #c2185b; }
 #hoverAll   { color: #007acc; }
 
-/* Ensure both charts share same transparent container */
-canvas {
-  max-width: 100%;
-}
+/* GENDER PANELS HOVER COLOURS */
+#hoverGender { color: #222; }
+#hoverDeclG  { color: #8e24aa; }
+#hoverAllG   { color: #009688; }
 
-/* same layout constraints as the other panels */
-#panelGender {
-  padding: 30px 20px;
-  max-width: 1000px;
-  margin: 0 auto;
-}
+/* GENDER PIE HOVER COLOURS */
+#hoverGenderLabel { color: #222; }
+#hoverGenderPct   { color: #2196f3; }
 
-/* gender-chart hover colors */
-#hoverGender { color: #222;     }  /* label text  */
-#hoverDeclG  { color: #8e24aa;  }  /* declined    */
-#hoverAllG   { color: #009688;  }  /* defendants  */
+/* AGE PANELS HOVER COLOURS (NEW) */
+#hoverAgeLabel  { color: #222; }
+#hoverAgeDef    { color: #007acc; }
+#hoverAgePop    { color: #ff9800; }
 
-/* gender pie panel */
-#panelGenderPie {
-  padding: 30px 20px;
-  max-width: 600px;
-  margin: 0 auto;
-}
+#hoverAgeLabel2 { color: #222; }
+#hoverAgeDecl   { color: #c2185b; }
+#hoverAgeAll    { color: #007acc; }
 
-/* hover colours */
-#hoverGenderLabel { color: #222;    }
-#hoverGenderPct   { color: #2196f3; } /* blue to match “Male” */
-
+/* BAR CHART BOX PADDING OVERRIDES */
 .bar-chart-box {
   padding-top: 0px;
   padding-bottom: 0px;
