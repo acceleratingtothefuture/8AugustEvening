@@ -1,12 +1,10 @@
 // victimAge.js – Victim age vs. population bar chart
+// File: victimAge.js
 
-// ---------------------------------------------------------------------------
-// CONSTANTS
-// ---------------------------------------------------------------------------
 const DATA_FOLDER = './data/';
+const PREFIX = window.VICTIM_DEM_PREFIX || 'victim_demographics'; // victim_demographics2023.xlsx
 
 const LABELS = ['20–29', '30–39', '40–49', '50–59', '60+'];
-
 const POPULATION = {
   '20–29': 26169,
   '30–39': 25065,
@@ -15,117 +13,95 @@ const POPULATION = {
   '60+':   35773
 };
 
-const VICT_COLOR = '#007acc'; // blue
-const POP_COLOR  = '#ff9800'; // orange
+const VICT_COLOR = '#007acc';
+const POP_COLOR  = '#ff9800';
 
-// ---------------------------------------------------------------------------
-// HELPERS
-// ---------------------------------------------------------------------------
-async function findLatestYear (prefix) {
-  const yrNow = new Date().getFullYear();
-  for (let y = yrNow; y >= 2015; y--) {
-    const res = await fetch(`${DATA_FOLDER}${prefix}_${y}.xlsx`, { method: 'HEAD' });
+const panel = document.getElementById('panelVictimAge');
+
+async function findLatestYear() {
+  const cur = new Date().getFullYear();
+  for (let y = cur; y >= 2015; y--) {
+    const res = await fetch(`${DATA_FOLDER}${PREFIX}${y}.xlsx`, { method: 'HEAD' });
     if (res.ok) return y;
   }
-  throw new Error(`No ${prefix} file found`);
+  return null;
 }
 
-function mapAgeGroup (age) {
+function mapAgeGroup(age) {
   if (!Number.isFinite(age)) return null;
   if (age >= 20 && age <= 29) return '20–29';
-  if (age >= 30 && age <= 39) return '30–39';
-  if (age >= 40 && age <= 49) return '40–49';
-  if (age >= 50 && age <= 59) return '50–59';
-  if (age >= 60)              return '60+';
+  if (age <= 39)             return '30–39';
+  if (age <= 49)             return '40–49';
+  if (age <= 59)             return '50–59';
+  if (age >= 60)             return '60+';
   return null; // ignore <20
 }
 
-function isBusiness (row) {
-  const gender = String(row['Gender'] || '').trim();
-  const ageRaw = String(row['Victim age'] || '').trim().toUpperCase();
-  return !gender && (ageRaw === 'N/A' || ageRaw === 'NA' || !ageRaw);
+function isBusiness(r) {
+  const g = String(r['Gender'] || '').trim();
+  const ar = String(r['Victim age'] || '').trim().toUpperCase();
+  return !g && (ar === 'N/A' || ar === 'NA' || !ar);
 }
 
-// ---------------------------------------------------------------------------
-// DATA + CHART
-// ---------------------------------------------------------------------------
-async function loadData () {
-  try {
-    const year = await findLatestYear('victim_demographics');
+async function loadData() {
+  const year = await findLatestYear();
+  if (!year) { panel.style.display = 'none'; return; }
 
-    const buf   = await fetch(`${DATA_FOLDER}victim_demographics_${year}.xlsx`).then(r => r.arrayBuffer());
-    const wb    = XLSX.read(buf, { type: 'array' });
-    const sheet = wb.Sheets[wb.SheetNames[0]];
-    const rows  = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+  const buf = await fetch(`${DATA_FOLDER}${PREFIX}${year}.xlsx`).then(r => r.arrayBuffer());
+  const wb  = XLSX.read(buf, { type: 'array' });
+  const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
 
-    const counts = {};
-    let total = 0;
+  const counts = {}; let total = 0;
+  rows.forEach(r => {
+    if (isBusiness(r)) return;
+    const ageNum = parseInt(String(r['Victim age']).trim(), 10);
+    const g = mapAgeGroup(ageNum);
+    if (!g) return;
+    counts[g] = (counts[g] || 0) + 1;
+    total++;
+  });
 
-    rows.forEach(r => {
-      if (isBusiness(r)) return; // skip businesses
+  if (!total) { panel.style.display = 'none'; return; }
 
-      const ageNum = parseInt(String(r['Victim age']).trim(), 10);
-      const g = mapAgeGroup(ageNum);
-      if (!g) return;
-
-      counts[g] = (counts[g] || 0) + 1;
-      total++;
-    });
-
-    const popTotal = Object.values(POPULATION).reduce((a, b) => a + b, 0);
-
-    const victData = LABELS.map(k => ((counts[k] || 0) / (total || 1)) * 100);
-    const popData  = LABELS.map(k => (POPULATION[k] / popTotal) * 100);
-
-    buildChart(LABELS, victData, popData);
-  } catch (err) {
-    console.error(err);
-  }
+  const popTotal = Object.values(POPULATION).reduce((a,b)=>a+b,0);
+  const vData = LABELS.map(k => ((counts[k]||0)/total)*100);
+  const pData = LABELS.map(k => (POPULATION[k]/popTotal)*100);
+  buildChart(LABELS, vData, pData);
 }
 
-function buildChart (labels, victData, popData) {
-  const ctx       = document.getElementById('victimAgeChart');
-  const hoverLbl  = document.getElementById('hoverVAgeLabel');
-  const hoverVict = document.getElementById('hoverVAgeVict');
-  const hoverPop  = document.getElementById('hoverVAgePop');
-
-  const existing = Chart.getChart(ctx);
-  if (existing) existing.destroy();
+function buildChart(labels, vData, pData) {
+  const ctx = document.getElementById('victimAgeChart');
+  const lbl = document.getElementById('hoverVAgeLabel');
+  const v   = document.getElementById('hoverVAgeVict');
+  const p   = document.getElementById('hoverVAgePop');
 
   new Chart(ctx, {
     type: 'bar',
     data: {
       labels,
-      datasets: [
-        { label: 'Victims',    data: victData, backgroundColor: VICT_COLOR },
-        { label: 'Population', data: popData,  backgroundColor: POP_COLOR }
+      datasets:[
+        { label:'Victims',    data:vData, backgroundColor:VICT_COLOR },
+        { label:'Population', data:pData, backgroundColor:POP_COLOR }
       ]
     },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      scales: {
-        x: {
-          beginAtZero: true,
-          ticks: { callback: v => v + '%' },
-          suggestedMax: 100
-        }
-      },
-      plugins: { legend: { position: 'top' }, tooltip: { enabled: false } },
-      onHover: (evt, els, chart) => {
-        const list = chart.getElementsAtEventForMode(evt, 'nearest', { axis: 'y', intersect: false }, false);
-        if (list.length) {
-          const i = list[0].index;
-          hoverLbl.textContent  = labels[i];
-          hoverVict.textContent = `${victData[i].toFixed(2)}% of victims`;
-          hoverPop.textContent  = `${popData[i].toFixed(2)}% of population`;
+    options:{
+      indexAxis:'y',
+      responsive:true,
+      scales:{ x:{ beginAtZero:true, ticks:{ callback:v=>v+'%' } } },
+      plugins:{ legend:{ position:'top' }, tooltip:{ enabled:false } },
+      onHover:(e,els,ch)=>{
+        const list=ch.getElementsAtEventForMode(e,'nearest',{axis:'y',intersect:false},false);
+        if(list.length){
+          const i=list[0].index;
+          lbl.textContent = labels[i];
+          v.textContent   = `${vData[i].toFixed(2)}% of victims`;
+          p.textContent   = `${pData[i].toFixed(2)}% of population`;
         } else {
-          hoverLbl.textContent = hoverVict.textContent = hoverPop.textContent = '';
+          lbl.textContent = v.textContent = p.textContent = '';
         }
       }
     }
   });
 }
 
-// run
 loadData();
