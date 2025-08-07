@@ -1,64 +1,51 @@
 /* RESET + BASE */
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Inter', sans-serif; background: #f8f9fa; color: #222; line-height: 1.6; }
-canvas { max-width: 100%; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#f8f9fa;color:#222;line-height:1.6}
+canvas{max-width:100%}
 
 /* NAVBAR */
-.nav { background: linear-gradient(90deg, #1a1c3a, #0d0e22); color: #fff; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,.3); position: sticky; top: 0; z-index: 1000; }
-.branding { display: flex; flex-direction: column; line-height: 1.2; }
-.brand-main { font-size: 1.6rem; font-weight: 700; }
-.brand-sub  { font-size: 1.05rem; color: #a9b0d4; font-weight: 400; }
-.logo { height: 100px; width: auto; flex-shrink: 0; }
+.nav{background:linear-gradient(90deg,#1a1c3a,#0d0e22);color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.3);position:sticky;top:0;z-index:1000}
+.branding{display:flex;flex-direction:column;line-height:1.2}
+.brand-main{font-size:1.6rem;font-weight:700}
+.brand-sub{font-size:1.05rem;color:#a9b0d4;font-weight:400}
+.logo{height:100px;width:auto;flex-shrink:0}
 
 /* HERO */
-.hero { background: linear-gradient(270deg,#242673 30%,#15163d 100%); color:#dfe3f7; text-align:center; padding:30px 20px; }
-.hero h1 { font-size:2.2rem; margin-bottom:6px; font-weight:700; }
-.hero p  { font-size:1rem; color:#a9b0d4; }
+.hero{background:linear-gradient(270deg,#242673 30%,#15163d 100%);color:#dfe3f7;text-align:center;padding:30px 20px}
+.hero h1{font-size:2.2rem;margin-bottom:6px;font-weight:700}
+.hero p{font-size:1rem;color:#a9b0d4}
 
 /* NAVIGATION */
-.main-nav { display:flex; justify-content:center; flex-wrap:wrap; gap:25px; background:#fff; border-bottom:1px solid #ddd; padding:10px 0; font-weight:600; }
-.main-nav a { text-decoration:none; color:#333; padding:6px 10px; border-radius:4px; transition:.2s; }
-.main-nav a:hover { background:#e0e0e0; color:#000; }
-.main-nav a.active { color:#007acc; border-bottom:2px solid #007acc; cursor:default; }
+.main-nav{display:flex;justify-content:center;flex-wrap:wrap;gap:25px;background:#fff;border-bottom:1px solid #ddd;padding:10px 0;font-weight:600}
+.main-nav a{text-decoration:none;color:#333;padding:6px 10px;border-radius:4px;transition:.2s}
+.main-nav a:hover{background:#e0e0e0;color:#000}
+.main-nav a.active{color:#007acc;border-bottom:2px solid #007acc;cursor:default}
 
-/* EXISTING VICTIM SERVICES PANEL ----------------------------------------- */
-.victim-panel { padding:30px 20px; }
-.victim-flex { display:flex; justify-content:center; align-items:flex-start; gap:40px; }
-.victim-left { display:block; width:auto; }
-.victimStatsWrap { display:grid; grid-template-columns:1fr; max-width:400px; }
-.victim-card { background:#fff; border-left:8px solid #2196f3; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,.05); padding:10px; transition:.3s; margin-bottom:20px; cursor:pointer; }
-.victim-card:hover { transform:translateY(-2px); background:#f0f8ff; }
-.victim-title { font-size:1.2rem; font-weight:800; margin-bottom:8px; }
-.victim-value { font-size:1.6rem; font-weight:900; }
-.victim-desc-dynamic { max-width:380px; width:100%; min-height:120px; padding:20px; background:#fff; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,.05); margin-bottom:20px; transition:opacity .3s; }
-#victimPieChart { position:absolute; top:220px; left:0; width:400px; height:250px; }
+/* VICTIM SERVICES PANEL */
+.victim-panel{padding:30px 20px}
+.victim-flex{display:flex;justify-content:center;align-items:flex-start;gap:40px}
+.victim-left{display:block;width:auto}
+.victimStatsWrap{display:grid;grid-template-columns:1fr;max-width:400px}
+.victim-card{background:#fff;border-left:8px solid #2196f3;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.05);padding:10px;margin-bottom:20px;transition:.3s;cursor:pointer}
+.victim-card:hover{transform:translateY(-2px);background:#f0f8ff}
+.victim-title{font-size:1.2rem;font-weight:800;margin-bottom:8px}
+.victim-value{font-size:1.6rem;font-weight:900}
+.victim-desc-dynamic{max-width:380px;width:100%;min-height:120px;padding:20px;background:#fff;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.05);margin-bottom:20px;transition:opacity .3s}
+#victimPieChart{position:absolute;top:220px;left:0;width:400px;height:250px}
 
-/* DEMOGRAPHIC PANELS ------------------------------------------------------ */
-.demo-panel { padding:30px 20px; max-width:1100px; margin:0 auto; }
-.dashboard-header { text-align:center; margin-bottom:30px; }
-.dashboard-header h2 { font-size:2.2rem; font-weight:800; margin-bottom:6px; }
-.dashboard-header p  { font-size:1.2rem; color:#444; }
+/* DEMOGRAPHIC PANEL */
+.demo-panel{padding:30px 20px;max-width:1100px;margin:40px auto 0}
+.dashboard-header{text-align:center;margin-bottom:30px}
+.dashboard-header h2{font-size:2.2rem;font-weight:800;margin-bottom:6px}
+.dashboard-header p{font-size:1.2rem;color:#444}
 
-.bar-chart-box { padding:30px; }
-.hover-box { text-align:center; margin-bottom:20px; min-height:70px; }
-.hover-line { font-size:1.2rem; font-weight:700; margin:4px 0; }
+.bar-chart-box{padding:30px}
+.hover-box{text-align:center;margin-bottom:20px;min-height:70px}
+.hover-line{font-size:1.2rem;font-weight:700;margin:4px 0}
 
 /* Hover text colours */
-#hoverVEthVict, #hoverVAgeVict { color:#007acc; }
-#hoverVEthPop,  #hoverVAgePop  { color:#ff9800; }
-#hoverVGenderPct { color:#2196f3; }
+#hoverVEthVict{color:#007acc}
+#hoverVEthPop{color:#ff9800}
 
 /* No‑data helper */
-.no-data { font-style:italic; }
-
-/* keep gender pie a sensible size */
-#victimGenderPieChart {
-  max-width: 420px;
-  margin: 0 auto;
-}
-
-/* give the demographic panels breathing-room below “Victim Services” */
-.demo-panel {
-  margin-top: 40px;   /* add spacing */
-}
-
+.no-data{font-style:italic}
