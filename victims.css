@@ -50,3 +50,15 @@ canvas { max-width: 100%; }
 
 /* No‑data helper */
 .no-data { font-style:italic; }
+
+/* keep gender pie a sensible size */
+#victimGenderPieChart {
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+/* give the demographic panels breathing-room below “Victim Services” */
+.demo-panel {
+  margin-top: 40px;   /* add spacing */
+}
+
