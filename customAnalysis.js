@@ -239,11 +239,17 @@ document.getElementById('metric').parentElement.style.display = isCaseMode ? '' 
   alasql('CREATE TABLE cases');
   alasql('INSERT INTO cases SELECT * FROM ?', [rows]);
 
-  const range     = document.getElementById('range').value;
-  const dim       = document.getElementById('dimension').value;
-  const metric    = document.getElementById('metric').value;
-  const pieMode   = document.getElementById('pieToggle').checked &&
-                    (metric === 'all_cases' || STATUS_TYPES.includes(metric));
+   const range   = document.getElementById('range').value;
+  const dim     = document.getElementById('dimension').value;
+
+  // Effective metric: defendants ignore the cases metric dropdown
+  const metricEl = document.getElementById('metric');
+  const metric   = isCaseMode ? metricEl.value : 'all_cases';
+
+  // Pie mode: allow in both datasets, but for cases we only enable pie
+  // when the metric is all_cases or a status metric
+  const pieMode  = document.getElementById('pieToggle').checked &&
+                   (isCaseMode ? (metric === 'all_cases' || STATUS_TYPES.includes(metric)) : true);
 
   /* buckets */
   const buckets = [];
@@ -304,65 +310,65 @@ if (range === 'last12') {
 
 
   /* aggregates */
+
   const allCounts = {}, statusCounts = {}, groupAll = {}, groupStatus = {};
 
-  rows.forEach(r=>{
-    const key = keyOf(r.year,r.month,range);
+  rows.forEach(r => {
+    const key = keyOf(r.year, r.month, range);
     let g = r[dim];
-if (g === undefined || g === null || g === '') g = 'Unknown';
+    if (g === undefined || g === null || g === '') g = 'Unknown';
 
+    // always build the "all" counts
+    allCounts[key] = (allCounts[key] || 0) + 1;
+    (groupAll[g] ??= {})[key] = (groupAll[g][key] || 0) + 1;
 
-    allCounts[key]=(allCounts[key]||0)+1;
-    (groupAll[g]??={})[key]=(groupAll[g][key]||0)+1;
-
-    const s = r.status;
-    (statusCounts[s]??={})[key]=(statusCounts[s][key]||0)+1;
-    (groupStatus[s]??={});
-    (groupStatus[s][g]??={});
-    groupStatus[s][g][key]=(groupStatus[s][g][key]||0)+1;
+    // ONLY do status buckets in case mode (defendants don’t have r.status)
+    if (isCaseMode && r.status) {
+      const s = r.status;
+      (statusCounts[s] ??= {})[key] = (statusCounts[s][key] || 0) + 1;
+      (groupStatus[s] ??= {});
+      (groupStatus[s][g] ??= {});
+      groupStatus[s][g][key] = (groupStatus[s][g][key] || 0) + 1;
+    }
   });
 
+
   /* ---------- map every metric to the counts it needs ---------- */
-function metricBuckets(metric){
-  switch (metric){
+  function metricBuckets(metric){
+    // Defendants: always "all"
+    if (!isCaseMode) return { bucket: allCounts, group: groupAll };
 
-    case 'all_cases':
-      return { bucket: allCounts, group: groupAll };
+    switch (metric){
+      case 'all_cases':
+        return { bucket: allCounts, group: groupAll };
 
-    case 'rejected':
-      return { bucket: statusCounts.Rejected || {},
-               group : groupStatus.Rejected || {} };
+      case 'rejected':
+        return { bucket: statusCounts.Rejected || {}, group: groupStatus.Rejected || {} };
 
-    case 'accepted': {          // all – rejected
-  const bucket = {}, group = {};
+      case 'accepted': {
+        const bucket = {}, group = {};
+        for (const k in allCounts){
+          bucket[k] = (allCounts[k] || 0) - (statusCounts.Rejected?.[k] || 0);
+        }
+        for (const g in groupAll){
+          group[g] = {};
+          for (const k in groupAll[g]){
+            const rej = groupStatus.Rejected?.[g]?.[k] || 0;
+            group[g][k] = (groupAll[g][k] || 0) - rej;
+          }
+        }
+        return { bucket, group };
+      }
 
-  /* bucket (overall counts) */
-  for (const k in allCounts){
-    bucket[k] = (allCounts[k] || 0) -
-                (statusCounts.Rejected?.[k] || 0);
-  }
+      case 'Sentenced':
+      case 'Dismissed':
+        return { bucket: statusCounts[metric] || {}, group: groupStatus[metric] || {} };
 
-  /* group-level counts */
-  for (const g in groupAll){
-    group[g] = {};
-    for (const k in groupAll[g]){
-      const rej = groupStatus.Rejected?.[g]?.[k] || 0;
-      group[g][k] = (groupAll[g][k] || 0) - rej;
+      default:
+        return { bucket:{}, group:{} };
     }
   }
-  return { bucket, group };
-}
 
-
-    case 'Sentenced':
-    case 'Dismissed':
-      return { bucket: statusCounts[metric] || {},
-               group : groupStatus[metric] || {} };
-
-    default:
-      return { bucket:{}, group:{} };   // safety fallback
-  }
-}
 
 
 /* which slice are we plotting? */
@@ -647,6 +653,7 @@ document.getElementById('toStats').onclick = () => activatePanel(1);
 document.getElementById('toMonthly').onclick = () => activatePanel(2);
 
 window.build = build;
+
 
 
 
