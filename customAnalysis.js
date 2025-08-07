@@ -65,49 +65,50 @@ let fileChartObj = null;
 let sentChartObj = null;
 
 
-/*  <--  keep everything above here exactly as you have it  ­--> */
-/* find every cases_YYYY.xlsx that exists, newest first */
-async function discoverYears() {
+async function discoverYears(type) {
+  const base = type === 'defendants' ? 'defendants' : 'cases';
   const found = [];
   const thisYear = new Date().getFullYear();
   for (let y = thisYear; y >= 2015; y--) {
-    const head = await fetch(`${FOLDER}cases_${y}.xlsx`, { method: 'HEAD' });
+    const head = await fetch(`${FOLDER}${base}_${y}.xlsx`, { method: 'HEAD' });
     if (head.ok) found.push(y);
-    else if (found.length) break;   // stop at first gap
+    else if (found.length) break; // stop at first gap
   }
   return found;
 }
 
-discoverYears().then(YEARS => {
-  loadData(YEARS).then(() => {
-    initDimension();
-    build();
-    initLargeChart();
-  });
+
+/* lazy-load per dataset so they stay TOTALLY distinct */
+const loaded = { cases:false, defendants:false };
+
+async function ensureLoaded(dataset) {
+  if (loaded[dataset]) return;
+  const years = await discoverYears(dataset);
+  if (dataset === 'cases') {
+    await loadCasesData(years);
+  } else {
+    await loadDefendantsData(years);
+  }
+  loaded[dataset] = true;
+}
+
+/* initial load (default select is Cases) */
+ensureLoaded('cases').then(() => {
+  initDimension();
+  build();
+  initLargeChart();
 });
 
 /* read both sheets per year — keep rows separate */
-async function loadData(YEARS) {
+/* read only CASE sheets for given years */
+async function loadCasesData(YEARS) {
   for (const y of YEARS) {
-    const [bufCases, bufDefs] = await Promise.all([
-      fetch(`${FOLDER}cases_${y}.xlsx`).then(r => r.arrayBuffer()),
-      fetch(`${FOLDER}defendants_${y}.xlsx`).then(r => r.arrayBuffer())
-    ]);
+    const buf = await fetch(`${FOLDER}cases_${y}.xlsx`).then(r => r.arrayBuffer());
+    const wb  = XLSX.read(buf, { type: 'array' });
+    const rowsRaw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
 
-    const wbCases = XLSX.read(bufCases, { type: 'array' });
-    const wbDefs  = XLSX.read(bufDefs,  { type: 'array' });
-
-    const cases = XLSX.utils.sheet_to_json(
-      wbCases.Sheets[wbCases.SheetNames[0]], { defval: '' }
-    );
-    const defs  = XLSX.utils.sheet_to_json(
-      wbDefs.Sheets[wbDefs.SheetNames[0]], { defval: '' }
-    );
-
-    /* ── 1️⃣  clean CASE rows ───────────────────────── */
-    const dateById = {};
-    cases.forEach(c => {
-      const cleaned = cleanCaseRow(c);
+    rowsRaw.forEach(r => {
+      const cleaned = cleanCaseRow(r);
       if (!cleaned) return;
 
       const dt = new Date(cleaned.date_da);
@@ -117,18 +118,25 @@ async function loadData(YEARS) {
       cleaned.quarter = Math.floor(dt.getMonth() / 3) + 1;
 
       caseRows.push(cleaned);
-      dateById[cleaned.case_id] = cleaned.date_da;
     });
+  }
+}
 
-    /* ── 2️⃣  clean DEFENDANT rows ─────────────────── */
-    defs.forEach(d => {
-      const cleaned = cleanDefRow(d);
+/* read only DEFENDANT sheets for given years  (use date from the defendants file) */
+async function loadDefendantsData(YEARS) {
+  for (const y of YEARS) {
+    const buf = await fetch(`${FOLDER}defendants_${y}.xlsx`).then(r => r.arrayBuffer());
+    const wb  = XLSX.read(buf, { type: 'array' });
+    const rowsRaw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+
+    rowsRaw.forEach(r => {
+      const cleaned = cleanDefRow(r);
       if (!cleaned) return;
 
-      const date = dateById[cleaned.case_id];
-      if (!date) return;                 // skip if no matching case
-
+      // defendants files include the receipt date; use it directly
+      const date = r['Case Received By DA'] || r['case received by da'] || r['Case Received'] || r['Case Received Case ID'] || '';
       const dt = new Date(date);
+
       defRows.push({
         ...cleaned,
         date_da : date,
@@ -148,13 +156,20 @@ async function loadData(YEARS) {
 }
 
 
+
 /***** CONTROLS *****/
 ['dataset','metric','range','dimension'].forEach(id =>
-  document.getElementById(id).onchange = (e) => {
-    if (id === 'dataset') initDimension();   // refresh dropdown first
+  document.getElementById(id).onchange = async (e) => {
+    if (id === 'dataset') {
+      const mode = document.getElementById('dataset').value; // cases | defendants
+      // make sure the right files are loaded, and ONLY those files are used
+      await ensureLoaded(mode);
+      initDimension(); // refresh dropdown keys based on active store
+    }
     build();
   }
 );
+
 
 document.getElementById('pieToggle').onchange = build;
 
@@ -363,7 +378,8 @@ if (loading) loading.remove();
   }
 
   const datasets=[
-    { label:'ALL', color:'#000',
+    { label: (document.getElementById('dataset').value === 'cases' ? 'ALL' : 'ALL DEFENDANTS'),
+  color:'#000',
       values:buckets.map(b=>bucketBase[b.key]||0) },
     ...Object.keys(groupBase).map((g,i)=>({
       label:g,
@@ -433,7 +449,12 @@ function renderLinePie(buckets, lineData, groupCounts, metricName) {
   grid.innerHTML = `
     <div class="chart-box" style="flex:1 1 100%;">
       <div class="chart-head">
-        <div class="chart-title">${prettyName(metricName)}</div>
+        <div class="chart-title">${
+  document.getElementById('dataset').value === 'cases'
+    ? prettyName(metricName)
+    : 'All Defendants'
+}</div>
+
         <div class="chart-month" id="lineMonth"></div>
       </div>
       <div class="chart-number" id="lineValue">${lineData.at(-1)} cases</div>
@@ -618,4 +639,5 @@ document.getElementById('toStats').onclick = () => activatePanel(1);
 document.getElementById('toMonthly').onclick = () => activatePanel(2);
 
 window.build = build;
+
 
