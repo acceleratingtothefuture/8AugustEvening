@@ -49,3 +49,18 @@ canvas{max-width:100%}
 
 /* No‑data helper */
 .no-data{font-style:italic}
+
+/* --- layout hot-fixes ----------------------------------- */
+.victim-header {
+  text-align: center;          /* keep title + subtitle centred */
+}
+
+#victimPieChart {
+  position: static !important; /* cancel any absolute positioning */
+  max-width: 420px;
+  width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;              /* horizontally centre the canvas */
+}
+
