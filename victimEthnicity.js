@@ -1,10 +1,8 @@
 // victimEthnicity.js – Victim ethnicity vs. population bar chart
-import { cleanDefRow } from './cleanData.js'; // re‑use helpers for basic trims (optional)
+// File: victimEthnicity.js
 
-// ---------------------------------------------------------------------------
-// CONSTANTS
-// ---------------------------------------------------------------------------
 const DATA_FOLDER = './data/';
+const PREFIX = window.VICTIM_DEM_PREFIX || 'victim_demographics'; // e.g. victim_demographics2023.xlsx
 
 const POPULATION = {
   'Hispanic or Latino': 153027,
@@ -16,29 +14,19 @@ const POPULATION = {
 };
 
 const LABELS = Object.keys(POPULATION);
+const VICT_COLOR = '#007acc';
+const POP_COLOR  = '#ff9800';
 
-const ETHNICITY_COLORS = {
-  'Hispanic or Latino': '#e91e63',
-  'White': '#ff9800',
-  'Black or African American': '#ffe600',
-  'Asian': '#4caf50',
-  'American Indian and Alaska Native': '#00bcd4',
-  'Native Hawaiian and Other Pacific Islander': '#9c27b0'
-};
+const panel   = document.getElementById('panelVictimEthnicity');
+const noDataP = document.getElementById('veNoData');
 
-const VICT_COLOR = '#007acc';   // blue
-const POP_COLOR  = '#ff9800';   // orange
-
-// ---------------------------------------------------------------------------
-// HELPERS
-// ---------------------------------------------------------------------------
-async function findLatestYear (prefix) {
-  const current = new Date().getFullYear();
-  for (let y = current; y >= 2015; y--) {
-    const res = await fetch(`${DATA_FOLDER}${prefix}_${y}.xlsx`, { method: 'HEAD' });
+async function findLatestYear () {
+  const cur = new Date().getFullYear();
+  for (let y = cur; y >= 2015; y--) {
+    const res = await fetch(`${DATA_FOLDER}${PREFIX}${y}.xlsx`, { method: 'HEAD' });
     if (res.ok) return y;
   }
-  throw new Error(`No file found for prefix ${prefix}`);
+  return null;
 }
 
 function normalEthnicity (raw) {
@@ -46,99 +34,49 @@ function normalEthnicity (raw) {
   if (eth.includes('white'))                     return 'White';
   if (eth.includes('black'))                     return 'Black or African American';
   if (eth.includes('asian'))                     return 'Asian';
-  if (eth.includes('hispanic') || eth.includes('latino'))
-                                               return 'Hispanic or Latino';
-  if (eth.includes('american indian') || eth.includes('alaska'))
-                                               return 'American Indian and Alaska Native';
-  if (eth.includes('hawaiian') || eth.includes('pacific'))
-                                               return 'Native Hawaiian and Other Pacific Islander';
+  if (eth.includes('hispanic') || eth.includes('latino')) return 'Hispanic or Latino';
+  if (eth.includes('american indian') || eth.includes('alaska')) return 'American Indian and Alaska Native';
+  if (eth.includes('hawaiian') || eth.includes('pacific')) return 'Native Hawaiian and Other Pacific Islander';
   return null;
 }
 
-// treat row as business if gender blank and victim age is N/A/blank
 function isBusiness (row) {
   const gender = String(row['Gender'] || '').trim();
   const ageRaw = String(row['Victim age'] || '').trim().toUpperCase();
   return !gender && (ageRaw === 'N/A' || ageRaw === 'NA' || !ageRaw);
 }
 
-// ---------------------------------------------------------------------------
-// DATA LOAD + CHART
-// ---------------------------------------------------------------------------
 async function loadData () {
-  try {
-    const year = await findLatestYear('victim_demographics');
+  const year = await findLatestYear();
+  if (!year) { panel.style.display = 'none'; return; }
 
-    const buf   = await fetch(`${DATA_FOLDER}victim_demographics_${year}.xlsx`).then(r => r.arrayBuffer());
-    const wb    = XLSX.read(buf, { type: 'array' });
-    const sheet = wb.Sheets[wb.SheetNames[0]];
-    const rows  = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+  const buf   = await fetch(`${DATA_FOLDER}${PREFIX}${year}.xlsx`).then(r => r.arrayBuffer());
+  const wb    = XLSX.read(buf, { type: 'array' });
+  const rows  = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
 
-    const counts = {};
-    let total = 0;
-
-    rows.forEach(r => {
-      if (isBusiness(r)) return; // skip businesses
-      const eth = normalEthnicity(r['Ethnicity']);
-      if (!eth) return;
-      counts[eth] = (counts[eth] || 0) + 1;
-      total++;
-    });
-
-    const popTotal = Object.values(POPULATION).reduce((a, b) => a + b, 0);
-
-    const victData = LABELS.map(k => ((counts[k] || 0) / (total || 1)) * 100);
-    const popData  = LABELS.map(k => (POPULATION[k] / popTotal) * 100);
-
-    buildChart(LABELS, victData, popData);
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-function buildChart (labels, victData, popData) {
-  const ctx       = document.getElementById('victimEthChart');
-  const hoverLbl  = document.getElementById('hoverVEthLabel');
-  const hoverVict = document.getElementById('hoverVEthVict');
-  const hoverPop  = document.getElementById('hoverVEthPop');
-
-  const existing = Chart.getChart(ctx);
-  if (existing) existing.destroy();
-
-  new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        { label: 'Victims',     data: victData, backgroundColor: VICT_COLOR },
-        { label: 'Population',  data: popData,  backgroundColor: POP_COLOR }
-      ]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      scales: {
-        x: {
-          beginAtZero: true,
-          ticks: { callback: v => v + '%' },
-          suggestedMax: 100
-        }
-      },
-      plugins: { legend: { position: 'top' }, tooltip: { enabled: false } },
-      onHover: (evt, els, chart) => {
-        const list = chart.getElementsAtEventForMode(evt, 'nearest', { axis: 'y', intersect: false }, false);
-        if (list.length) {
-          const i = list[0].index;
-          hoverLbl.textContent  = labels[i];
-          hoverVict.textContent = `${victData[i].toFixed(2)}% of victims`;
-          hoverPop.textContent  = `${popData[i].toFixed(2)}% of population`;
-        } else {
-          hoverLbl.textContent = hoverVict.textContent = hoverPop.textContent = '';
-        }
-      }
-    }
+  const counts = {}; let total = 0;
+  rows.forEach(r => {
+    if (isBusiness(r)) return;
+    const eth = normalEthnicity(r['Ethnicity']);
+    if (!eth) return;
+    counts[eth] = (counts[eth] || 0) + 1; total++;
   });
+
+  if (!total) { panel.style.display = 'none'; return; }
+
+  const popTotal = Object.values(POPULATION).reduce((a,b)=>a+b,0);
+  const victData = LABELS.map(k => ((counts[k]||0)/total)*100);
+  const popData  = LABELS.map(k => (POPULATION[k]/popTotal)*100);
+  buildChart(LABELS, victData, popData);
 }
 
-// kick‑off
+function buildChart(labels, victData, popData){
+  const ctx   = document.getElementById('victimEthChart');
+  const lblEl = document.getElementById('hoverVEthLabel');
+  const vEl   = document.getElementById('hoverVEthVict');
+  const pEl   = document.getElementById('hoverVEthPop');
+
+  new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'Victims',data:victData,backgroundColor:VICT_COLOR},{label:'Population',data:popData,backgroundColor:POP_COLOR}]},options:{indexAxis:'y',responsive:true,scales:{x:{beginAtZero:true,ticks:{callback:v=>v+'%'}}},plugins:{legend:{position:'top'},tooltip:{enabled:false}},onHover:(e,els,ch)=>{const list=ch.getElementsAtEventForMode(e,'nearest',{axis:'y',intersect:false},false);if(list.length){const i=list[0].index;lblEl.textContent=labels[i];vEl.textContent=`${victData[i].toFixed(2)}% of victims`;pEl.textContent=`${popData[i].toFixed(2)}% of population`; }else{lblEl.textContent=vEl.textContent=pEl.textContent='';}}}});
+}
+
 loadData();
